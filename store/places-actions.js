@@ -7,11 +7,16 @@ export const addPlace = (title, image) => {
     const filename = image.split("/").pop();
     const newPath = FileSystem.documentDirectory + filename;
 
-    FileSystem.moveAsync({
-      from: image,
-      to: newPath
-    });
+    try {
+      await FileSystem.moveAsync({
+        from: image,
+        to: newPath
+      });
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
 
-    dispatch({ type: ADD_PLACE, placeData: { title: title, image: image } });
+    dispatch({ type: ADD_PLACE, placeData: { title: title, image: newPath } });
   };
 };
