@@ -4,9 +4,25 @@ export const ADD_PLACE = "ADD_PLACE";
 export const SET_PLACES = "SET_PLACES";
 
 import { insertPlace, fetchPlaces } from "../helpers/db";
+import ENV from "../env";
 
-export const addPlace = (title, image) => {
+export const addPlace = (title, image, location) => {
   return async dispatch => {
+    const resp = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.lat},${location.lng}&key=${ENV.googleApiKey}`
+    );
+
+    if (!resp.ok) {
+      throw new Error("Sum ting wong");
+    }
+
+    const resData = await resp.json();
+    if (!resData.results) {
+      throw new Error("Sum ting wong");
+    }
+
+    const address = resData.results[0].formatted_address;
+
     const filename = image.split("/").pop();
     const newPath = FileSystem.documentDirectory + filename;
 
@@ -19,15 +35,24 @@ export const addPlace = (title, image) => {
       const dbResult = await insertPlace(
         title,
         newPath,
-        "Dummy address",
-        15.6,
-        12.3
+        address,
+        location.lat,
+        location.lng
       );
 
       console.log(dbResult);
       dispatch({
         type: ADD_PLACE,
-        placeData: { id: dbResult.insertId, title: title, image: newPath }
+        placeData: {
+          id: dbResult.insertId,
+          title: title,
+          image: newPath,
+          address,
+          coords: {
+            lat: location.lat,
+            lng: location.lng
+          }
+        }
       });
     } catch (err) {
       console.log(err);
